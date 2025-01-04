@@ -251,6 +251,7 @@
                       type="email"
                       class="form-control"
                       id="exampleFormControlInput1"
+                      name ="description"
                       placeholder="Complaints" />
                   </div>
                   <div class="mb-3 row">
@@ -259,6 +260,7 @@
                       <input 
                       class="form-control" 
                       type="date" 
+                      name ="date"
                       value="2021-06-18" 
                       id="html5-date-input" />
                   </div>
@@ -268,11 +270,12 @@
                       class="form-control"
                       type="text"
                       id="exampleFormControlReadOnlyInput1"
+                      name="location"
                       placeholder="Location"/>
                   </div>
                   <div class="mb-3">
                     <label for="formFile" class="form-label">Complaints attachment</label>
-                    <input class="form-control" type="file" id="formFile" />
+                    <input class="form-control" type="file" id="formFile" name="attachment"/>
                   </div>
                   <div class="pt-4">
                     <button type="submit" class="btn btn-primary me-sm-3 me-1">Submit</button>

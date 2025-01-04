@@ -285,6 +285,7 @@
                 </div>
                 </div>
                 </div>
+            <!-- display information of the table -->
                 <!-- table output -->
                 <div class="col-12">
                   <div class="card mb-4">

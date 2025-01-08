@@ -225,6 +225,7 @@
           <!-- / Navbar -->
 
           <!-- Content wrapper -->
+          <form action="residentComplaint" method="POST">
          <div class="content-wrapper">
             <!-- Content -->
            <div class="container-xxl flex-grow-1 container-p-y">
@@ -236,7 +237,7 @@
                 <div class="card-body">
                   <div class="mb-3">
                     <label for="exampleFormControlSelect1" class="form-label">Complaints type</label>
-                    <select class="form-select" id="exampleFormControlSelect1" aria-label="Default select example">
+                    <select class="form-select" id="exampleFormControlSelect1" aria-label="Default select example" name="complaintType">
                       <option selected>Open this select menu</option>
                       <option value="1">Parking</option>
                       <option value="2">Noise</option>
@@ -282,9 +283,11 @@
                     <button type="reset" class="btn btn-label-secondary">Cancel</button>
                   </div>
                </div>
-                </div>
-                </div>
-                </div>
+              </div>
+             </div>
+            </div>
+           </form>
+
             <!-- display information of the table -->
                 <!-- table output -->
                 <div class="col-12">

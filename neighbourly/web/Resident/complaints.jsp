@@ -225,7 +225,7 @@
           <!-- / Navbar -->
 
           <!-- Content wrapper -->
-          <form action="residentComplaint" method="POST">
+          <form action="Resident/residentController" method="POST" enctype="multipart/form-data">
          <div class="content-wrapper">
             <!-- Content -->
            <div class="container-xxl flex-grow-1 container-p-y">
@@ -242,14 +242,14 @@
                       <option value="1">Parking</option>
                       <option value="2">Noise</option>
                       <option value="3">Property</option>
-                      <option value="3">Enviroment</option>
+                      <option value="3">Environment</option>
                       <option value="3">Waste Management</option>
                     </select>
                   </div>
                   <div class="mb-3">
                     <label for="exampleFormControlInput1" class="form-label">Complaints description</label>
                     <input
-                      type="email"
+                      type="text"
                       class="form-control"
                       id="exampleFormControlInput1"
                       name ="description"
@@ -262,7 +262,7 @@
                       class="form-control" 
                       type="date" 
                       name ="date"
-                      value="2021-06-18" 
+                      value="" 
                       id="html5-date-input" />
                   </div>
                   <div class="mb-3">
@@ -279,7 +279,8 @@
                     <input class="form-control" type="file" id="formFile" name="attachment"/>
                   </div>
                   <div class="pt-4">
-                    <button type="submit" class="btn btn-primary me-sm-3 me-1">Submit</button>
+                    <button type="submit" value="save" class="btn btn-primary me-sm-3 me-1">Submit</button>
+                    <input type="hidden" name="accessType" value="add"/>
                     <button type="reset" class="btn btn-label-secondary">Cancel</button>
                   </div>
                </div>

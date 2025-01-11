@@ -3,11 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
-/**
- *
- * @author soleha
- */
+package bean;
 import java.time.LocalDate;
 
 public class residentComplaints {

@@ -27,10 +27,16 @@ public class securityController extends HttpServlet {
 
         String accessType = request.getParameter("accessType");
 
-        if ("add".equalsIgnoreCase(accessType)) {
+        if ("addReport".equalsIgnoreCase(accessType)) {
             handleAddReport(request, response);
-        } else if ("delete".equalsIgnoreCase(accessType)) {
+        } else if ("deleteReport".equalsIgnoreCase(accessType)) {
             handleDeleteReport(request, response);
+        } else if ("addVisitor".equalsIgnoreCase(accessType)) {
+            handleAddVisitor(request, response); 
+        } else if ("editVisitor".equalsIgnoreCase(accessType)) {
+            handleEditVisitor(request, response); 
+        } else if ("deleteVisitor".equalsIgnoreCase(accessType)) {
+            handleDeleteVisitor(request, response);
         } else {
             try (PrintWriter out = response.getWriter()) {
                 out.println("<html>");
@@ -44,7 +50,8 @@ public class securityController extends HttpServlet {
             }
         }
     }
-
+    
+    //Add Rounding Report Form
     private void handleAddReport(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         String dateReport = request.getParameter("dateReport");
         String location = request.getParameter("location");
@@ -55,14 +62,13 @@ public class securityController extends HttpServlet {
             location == null || location.trim().isEmpty() ||
             remarks == null || remarks.trim().isEmpty()) {
             request.setAttribute("message", "Please insert all values");
-            request.setAttribute("errorType", "add");
+            request.setAttribute("errorType", "addReport");
             request.getRequestDispatcher("error.jsp").forward(request, response);
             return;
         }
 
         try {
             int userid = Integer.parseInt(useridStr);
-            java.sql.Date sqlDate = java.sql.Date.valueOf(dateReport);
             Part filePart = request.getPart("attachment");
             if (filePart == null) {
                 request.setAttribute("message", "No file uploaded");
@@ -74,10 +80,10 @@ public class securityController extends HttpServlet {
 
             // Use the helper method to get a connection
             try (Connection conn = getConnection()) {
-                String query = "INSERT INTO Report (USERID, DATEOFVISIT, LOCATION, REMARKS, ATTACHMENT) VALUES (?, ?, ?, ?, ?)";
+                String query = "INSERT INTO Report (USERID, DATEOFVISIT, LOCATION, REMARKS, ATTACHMENT) VALUES (?, TO_DATE(?, YYYY-MM-DD), ?, ?, ?)";
                 PreparedStatement stmt = conn.prepareStatement(query);
                 stmt.setInt(1, userid);
-                stmt.setDate(2, sqlDate);
+                stmt.setString(2, dateReport);
                 stmt.setString(3, location);
                 stmt.setString(4, remarks);
                 stmt.setBlob(5, fileContent);
@@ -108,13 +114,128 @@ public class securityController extends HttpServlet {
         }
 
     }
+    
+    //Add Visitor Form
+    private void handleAddVisitor(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        String visitorName = request.getParameter("visitorname");
+        String icPassport = request.getParameter("icpassport");
+        String plateNo = request.getParameter("plateno");
+        String entryTime = request.getParameter("entrytime");
+        String dateVisit = request.getParameter("datevisit");
+        String purposeVisit = request.getParameter("purposevisit");
+        String phoneNo = request.getParameter("phoneno");
+        String useridStr = request.getParameter("userid");
 
+        if (visitorName == null || visitorName.trim().isEmpty() ||
+            icPassport == null || icPassport.trim().isEmpty() ||
+            plateNo == null || plateNo.trim().isEmpty() ||
+            entryTime == null || entryTime.trim().isEmpty() ||
+            dateVisit == null || dateVisit.trim().isEmpty() ||
+            purposeVisit == null || purposeVisit.trim().isEmpty() ||
+            phoneNo == null || phoneNo.trim().isEmpty()) {
+            request.setAttribute("message", "Please insert all values");
+            request.setAttribute("errorType", "addVisitor");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+            return;
+        }
+
+        try {
+            int userid = Integer.parseInt(useridStr);
+
+            try (Connection conn = getConnection()) {
+                String query = "INSERT INTO VISITOR (USERID, VISITOR_NAME, VISITOR_IC, NO_PLATE, ENTRYTIME, EXITTIME, DATEOFVISIT, PURPOSEOFVISIT, VISITOR_PHONENUM) VALUES (?, ?, ?, ?, TO_TIMESTAMP(?, 'HH24:MI'), ?, TO_DATE(?, 'YYYY-MM-DD'), ?, ?)";
+                PreparedStatement stmt = conn.prepareStatement(query);
+                stmt.setInt(1, userid);
+                stmt.setString(2, visitorName);
+                stmt.setString(3, icPassport);
+                stmt.setString(4, plateNo);
+                stmt.setString(5, entryTime);
+                stmt.setString(6, null);
+                stmt.setString(7, dateVisit);
+                stmt.setString(8, purposeVisit);
+                stmt.setString(9, phoneNo);
+                stmt.executeUpdate();
+            }
+
+            request.setAttribute("message", "Data successfully submitted");
+            request.getRequestDispatcher("success.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            request.setAttribute("message", "Invalid user ID format");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+            } catch (Exception e) {
+                if (e instanceof ClassNotFoundException) {
+                    System.out.println("Oracle JDBC Driver not found.");
+                } else if (e instanceof SQLException) {
+                    System.out.println("A database error occurred: " + e.getMessage());
+                } else {
+                    System.out.println("An unexpected error occurred: " + e.getMessage());
+                }
+
+                e.printStackTrace();
+                request.setAttribute("message", "An error occurred while processing your request");
+                request.getRequestDispatcher("error.jsp").forward(request, response);
+        }
+    }
+
+    //Exit Visitor
+    private void handleEditVisitor(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        String visitorIdStr = request.getParameter("id"); // Assuming visitor ID is passed as a parameter
+
+        if (visitorIdStr == null || visitorIdStr.trim().isEmpty()) {
+            request.setAttribute("message", "Visitor ID is required to update exit time");
+            request.setAttribute("errorType", "editVisitor");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+            return;
+        }
+
+        try {
+            int visitorId = Integer.parseInt(visitorIdStr);
+
+            // Get the current time
+            java.sql.Timestamp currentTime = new java.sql.Timestamp(System.currentTimeMillis());
+
+            // Use the helper method to get a connection
+            try (Connection conn = getConnection()) {
+                String query = "UPDATE VISITOR SET EXITTIME = ? WHERE REGISTERID = ?";
+                PreparedStatement stmt = conn.prepareStatement(query);
+                stmt.setTimestamp(1, currentTime); // Set the current time
+                stmt.setInt(2, visitorId); // Set the visitor ID
+
+                int rowsUpdated = stmt.executeUpdate();
+
+                if (rowsUpdated > 0) {
+                    request.setAttribute("message", "Exit time successfully updated for Visitor ID: " + visitorId);
+                    request.getRequestDispatcher("VisitorTable.jsp").forward(request, response);
+                } else {
+                    request.setAttribute("message", "No visitor found with the specified ID");
+                    request.getRequestDispatcher("error.jsp").forward(request, response);
+                }
+            }
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            request.setAttribute("message", "Invalid Visitor ID format");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+        } catch (Exception e) {
+            if (e instanceof SQLException) {
+                System.out.println("A database error occurred: " + e.getMessage());
+            } else {
+                System.out.println("An unexpected error occurred: " + e.getMessage());
+            }
+
+            e.printStackTrace();
+            request.setAttribute("message", "An error occurred while updating the visitor");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+        }
+    }
+
+    //Delete Report
     private void handleDeleteReport(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         String reportIdStr = request.getParameter("id");
 
         if (reportIdStr == null || reportIdStr.trim().isEmpty()) {
             request.setAttribute("message", "Invalid report ID");
-            request.setAttribute("errorType", "delete");
+            request.setAttribute("errorType", "deleteReport");
             request.getRequestDispatcher("error.jsp").forward(request, response);
             return;
         }
@@ -134,7 +255,7 @@ public class securityController extends HttpServlet {
                     request.getRequestDispatcher("success.jsp").forward(request, response);
                 } else {
                     request.setAttribute("message", "Report not found");
-                    request.setAttribute("errorType", "delete");
+                    request.setAttribute("errorType", "deleteReport");
                     request.getRequestDispatcher("error.jsp").forward(request, response);
                 }
             }
@@ -145,7 +266,49 @@ public class securityController extends HttpServlet {
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
             request.setAttribute("message", "An error occurred while deleting the report");
-            request.setAttribute("errorType", "delete");
+            request.setAttribute("errorType", "deleteReports");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+        }
+    }
+    
+    //Delete Visitor
+    private void handleDeleteVisitor(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        String registerIdStr = request.getParameter("id");
+
+        if (registerIdStr == null || registerIdStr.trim().isEmpty()) {
+            request.setAttribute("message", "Invalid Visitor ID");
+            request.setAttribute("errorType", "deleteVisitor");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+            return;
+        }
+
+        try {
+            int reportId = Integer.parseInt(registerIdStr);
+
+            // Use the helper method to get a connection
+            try (Connection conn = getConnection()) {
+                String query = "DELETE FROM Visitor WHERE REGISTERID = ?";
+                PreparedStatement stmt = conn.prepareStatement(query);
+                stmt.setInt(1, reportId);
+                int rowsAffected = stmt.executeUpdate();
+
+                if (rowsAffected > 0) {
+                    request.setAttribute("message", "Report successfully deleted");
+                    request.getRequestDispatcher("success.jsp").forward(request, response);
+                } else {
+                    request.setAttribute("message", "Report not found");
+                    request.setAttribute("errorType", "deleteVisitor");
+                    request.getRequestDispatcher("error.jsp").forward(request, response);
+                }
+            }
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            request.setAttribute("message", "Invalid report ID format");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+        } catch (ClassNotFoundException | SQLException e) {
+            e.printStackTrace();
+            request.setAttribute("message", "An error occurred while deleting the report");
+            request.setAttribute("errorType", "deleteVisitor");
             request.getRequestDispatcher("error.jsp").forward(request, response);
         }
     }

@@ -91,6 +91,7 @@ public class securityController extends HttpServlet {
             }
 
             request.setAttribute("message", "Data successfully submitted");
+            request.setAttribute("type", "addReport");
             request.getRequestDispatcher("success.jsp").forward(request, response);
         } catch (NumberFormatException e) {
             e.printStackTrace();
@@ -158,6 +159,7 @@ public class securityController extends HttpServlet {
             }
 
             request.setAttribute("message", "Data successfully submitted");
+            request.setAttribute("type", "addVisitor");
             request.getRequestDispatcher("success.jsp").forward(request, response);
         } catch (NumberFormatException e) {
             e.printStackTrace();

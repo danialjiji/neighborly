@@ -263,7 +263,8 @@
                       type="date" 
                       name ="date"
                       value="" 
-                      id="html5-date-input" />
+                      id="html5-date-input"
+                      placeholder="YYYY-MM-DD"/>
                   </div>
                   <div class="mb-3">
                     <label for="exampleFormControlReadOnlyInput1" class="form-label">Location</label>
@@ -276,11 +277,12 @@
                   </div>
                   <div class="mb-3">
                     <label for="formFile" class="form-label">Complaints attachment</label>
-                    <input class="form-control" type="file" id="formFile" name="attachment"/>
+                    <input class="form-control" type="file" id="attachment" name="attachment"/>
                   </div>
                   <div class="pt-4">
                     <button type="submit" value="save" class="btn btn-primary me-sm-3 me-1">Submit</button>
-                    <input type="hidden" name="accessType" value="add"/>
+                    <input type="hidden" name="accessType" value="add">
+                    <input type="hidden" name="userid" value="10001">
                     <button type="reset" class="btn btn-label-secondary">Cancel</button>
                   </div>
                </div>

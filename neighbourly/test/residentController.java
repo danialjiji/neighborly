@@ -5,6 +5,7 @@
  */
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -52,45 +53,71 @@ public class residentController extends HttpServlet {
     private void addComplaints (HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-         // Database connection details
-        String dbURL = "jdbc:oracle:thin:@localhost:1521:XE";
-        String dbUser = "neighbourlynew";
-        String dbPassword = "system";
-        
-         String complaintType = request.getParameter("complaintType");
+        String complaintType = request.getParameter("complaintType");
         String description = request.getParameter("description");
         String date = request.getParameter("date");
         String location = request.getParameter("location");
+        String useridStr = request.getParameter("userid");
 
-        // Handle file upload (optional)
-        Part filePart = request.getPart("attachment");
-        String fileName = filePart.getSubmittedFileName();
-
-        
-        //Convert date to java.sql.Date
-        java.sql.Date sqlDate = java.sql.Date.valueOf(date);
-
-        // Database insertion logic
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:XE", "neighbourlynew", "system");
-            String query = "INSERT INTO Complaint (complaint_type_name, complaint_type_desc, complaint_date, complaint_location, complaint_attachment) VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement stmt = conn.prepareStatement(query);
-            stmt.setString(1, complaintType);
-            stmt.setString(2, description);
-            stmt.setDate(3, sqlDate);
-            stmt.setString(4, location);
-            stmt.setString(5, fileName);
-            conn.close();
-            
-            request.setAttribute("successMessage", "Complaint added successfully!");
-            request.getRequestDispatcher("complaints.jsp").forward(request, response);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            request.setAttribute("errorMessage", "Error adding complaint: " + e.getMessage());
-            request.getRequestDispatcher("complaints.jsp").forward(request, response);
+         if (complaintType == null || complaintType.trim().isEmpty() ||
+            description == null || description.trim().isEmpty() ||
+            date == null || date.trim().isEmpty() ||
+            location == null || location.trim().isEmpty()) {
+            request.setAttribute("message", "Please insert all values");
+            request.setAttribute("errorType", "add");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+            return;
         }
+         
+          try {
+            int userid = Integer.parseInt(useridStr);
+            java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+            Part filePart = request.getPart("attachment");
+            if (filePart == null) {
+                request.setAttribute("message", "No file uploaded");
+                request.getRequestDispatcher("error.jsp").forward(request, response);
+                return;
+            }
+            String fileName = filePart.getSubmittedFileName();
+            InputStream fileContent = filePart.getInputStream();
+
+             try (Connection conn = getConnection()) {
+                String query = "INSERT INTO Complaint (USERID, COMPLAINT_TYPE_NAME, COMPLAINT_TYPE_DESC, COMPLAINT_DATE, COMPLAINT_LOCATION, COMPLAINT_ATTACHMENT) VALUES (?, ?, ?, ?, ?, ?)";
+                PreparedStatement stmt = conn.prepareStatement(query);
+                stmt.setInt(1, userid);
+                stmt.setString(2, complaintType);
+                stmt.setString(3, description);
+                stmt.setDate (4, sqlDate);
+                stmt.setString(5, location);
+                stmt.setBlob(6, fileContent);
+                stmt.executeUpdate();
+            }
+                
+            request.setAttribute("message", "Data successfully submitted");
+            request.getRequestDispatcher("complaints.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            request.setAttribute("message", "Invalid user ID format");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+        } catch (Exception e) { // Catch any Exception that may occur
+            if (e instanceof ClassNotFoundException) {
+                // Handle ClassNotFoundException specifically
+                System.out.println("Oracle JDBC Driver not found.");
+            } else if (e instanceof SQLException) {
+                // Handle SQLException specifically
+                System.out.println("A database error occurred: " + e.getMessage());
+            } else {
+                // Handle other exceptions
+                System.out.println("An unexpected error occurred: " + e.getMessage());
+            }
+
+            e.printStackTrace(); // Print the stack trace for debugging
+            request.setAttribute("message", "An error occurred while processing your request");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+        }
+     }
         
-    }
+
     
     
 
@@ -132,5 +159,9 @@ public class residentController extends HttpServlet {
     public String getServletInfo() {
         return "Short description";
     }// </editor-fold>
+
+    private Connection getConnection() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 
 }

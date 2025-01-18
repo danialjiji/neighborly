@@ -5,6 +5,7 @@
  */
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -22,8 +23,14 @@ import javax.servlet.http.Part;
  * @author soleha
  */
 @MultipartConfig
-@WebServlet(urlPatterns = {"/Resident/residentController"})
+@WebServlet(urlPatterns = {"/residentController"})
 public class residentController extends HttpServlet {
+    
+     // Helper method to load the Oracle driver and get a database connection
+    private Connection getConnection() throws SQLException, ClassNotFoundException {
+        Class.forName("oracle.jdbc.OracleDriver"); // Load the Oracle JDBC driver
+        return DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:XE", "neighborly", "system");
+    }
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -31,7 +38,7 @@ public class residentController extends HttpServlet {
         
            String accessType = request.getParameter("accessType");
 
-        if ("add".equalsIgnoreCase(accessType)) {
+        if ("addComplaints".equalsIgnoreCase(accessType)) {
            addComplaints (request, response);
         } /*else if ("edit".equalsIgnoreCase(accessType)) {
             //editEmployee(request, response);
@@ -52,45 +59,84 @@ public class residentController extends HttpServlet {
     private void addComplaints (HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-         // Database connection details
-        String dbURL = "jdbc:oracle:thin:@localhost:1521:XE";
-        String dbUser = "neighbourlynew";
-        String dbPassword = "system";
-        
-         String complaintType = request.getParameter("complaintType");
+        String complaintTypeStr = request.getParameter("complaintType");
         String description = request.getParameter("description");
-        String date = request.getParameter("date");
+        String date = request.getParameter("dateComplaint");
         String location = request.getParameter("location");
+        String useridStr = request.getParameter("userid");
 
-        // Handle file upload (optional)
-        Part filePart = request.getPart("attachment");
-        String fileName = filePart.getSubmittedFileName();
-
-        
-        //Convert date to java.sql.Date
-        java.sql.Date sqlDate = java.sql.Date.valueOf(date);
-
-        // Database insertion logic
-        try {
-            Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:XE", "neighbourlynew", "system");
-            String query = "INSERT INTO Complaint (complaint_type_name, complaint_type_desc, complaint_date, complaint_location, complaint_attachment) VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement stmt = conn.prepareStatement(query);
-            stmt.setString(1, complaintType);
-            stmt.setString(2, description);
-            stmt.setDate(3, sqlDate);
-            stmt.setString(4, location);
-            stmt.setString(5, fileName);
-            conn.close();
-            
-            request.setAttribute("successMessage", "Complaint added successfully!");
-            request.getRequestDispatcher("complaints.jsp").forward(request, response);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            request.setAttribute("errorMessage", "Error adding complaint: " + e.getMessage());
-            request.getRequestDispatcher("complaints.jsp").forward(request, response);
+         if (complaintTypeStr == null || complaintTypeStr.trim().isEmpty() ||
+            description == null || description.trim().isEmpty() ||
+            date == null || date.trim().isEmpty() ||
+            location == null || location.trim().isEmpty()) {
+            request.setAttribute("message", "Please insert all values");
+            request.setAttribute("errorType", "add");
+            request.getRequestDispatcher("error.jsp").forward(request, response);
+            return;
         }
+         
+          try {
+            int userid = Integer.parseInt(useridStr);
+             int complaintType = Integer.parseInt(complaintTypeStr);
+            java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+            Part filePart = request.getPart("attachment");
+            if (filePart == null) {
+                request.setAttribute("message", "No file uploaded");
+                request.getRequestDispatcher("error.jsp").forward(request, response);
+                return;
+            }
+            String fileName = filePart.getSubmittedFileName();
+            InputStream fileContent = filePart.getInputStream();
+            
+            int statusid = 1;
+            int complainttypeid = 60001;
+            
+            
+            System.out.println(statusid);
+            System.out.println(complainttypeid);
+            System.out.println(complaintType);
+            System.out.println(description);
+            System.out.println(date);
+            System.out.println(location);
+            System.out.println(userid);
+             try (Connection conn = getConnection()) {
+                String query = "INSERT INTO Complaint (USERID, STATUSID, COMPLAINT_TYPE_ID, COMPLAINT_DESCRIPTION, COMPLAINT_DATE, COMPLAINT_LOCATION, COMPLAINT_ATTACHMENT) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                PreparedStatement stmt = conn.prepareStatement(query);
+                stmt.setInt(1, userid);
+                stmt.setInt(2, statusid);
+                stmt.setInt(3, complainttypeid);
+                stmt.setString(4, description);
+                stmt.setDate (5, sqlDate);
+                stmt.setString(6, location);
+                stmt.setString(7, fileName);
+                stmt.executeUpdate();
+            }
+                
+            request.setAttribute("message", "Data successfully submitted");
+           // request.getRequestDispatcher("tablecomplaint.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            request.setAttribute("message", "Invalid user ID format");
+            //request.getRequestDispatcher("error.jsp").forward(request, response);
+        } catch (Exception e) { // Catch any Exception that may occur
+            if (e instanceof ClassNotFoundException) {
+                // Handle ClassNotFoundException specifically
+                System.out.println("Oracle JDBC Driver not found.");
+            } else if (e instanceof SQLException) {
+                // Handle SQLException specifically
+                System.out.println("A database error occurred: " + e.getMessage());
+            } else {
+                // Handle other exceptions
+                System.out.println("An unexpected error occurred: " + e.getMessage());
+            }
+
+            e.printStackTrace(); // Print the stack trace for debugging
+            request.setAttribute("message", "An error occurred while processing your request");
+            //request.getRequestDispatcher("error.jsp").forward(request, response);
+        }
+     }
         
-    }
+
     
     
 
@@ -132,5 +178,6 @@ public class residentController extends HttpServlet {
     public String getServletInfo() {
         return "Short description";
     }// </editor-fold>
+
 
 }

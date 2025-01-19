@@ -23,8 +23,14 @@ import javax.servlet.http.Part;
  * @author soleha
  */
 @MultipartConfig
-@WebServlet(urlPatterns = {"/Resident/residentController"})
+@WebServlet(urlPatterns = {"/residentController"})
 public class residentController extends HttpServlet {
+    
+     // Helper method to load the Oracle driver and get a database connection
+    private Connection getConnection() throws SQLException, ClassNotFoundException {
+        Class.forName("oracle.jdbc.OracleDriver"); // Load the Oracle JDBC driver
+        return DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:XE", "neighborly", "system");
+    }
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -32,7 +38,7 @@ public class residentController extends HttpServlet {
         
            String accessType = request.getParameter("accessType");
 
-        if ("add".equalsIgnoreCase(accessType)) {
+        if ("addComplaints".equalsIgnoreCase(accessType)) {
            addComplaints (request, response);
         } /*else if ("edit".equalsIgnoreCase(accessType)) {
             //editEmployee(request, response);
@@ -53,13 +59,13 @@ public class residentController extends HttpServlet {
     private void addComplaints (HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-        String complaintType = request.getParameter("complaintType");
+        String complaintTypeStr = request.getParameter("complaintType");
         String description = request.getParameter("description");
-        String date = request.getParameter("date");
+        String date = request.getParameter("dateComplaint");
         String location = request.getParameter("location");
         String useridStr = request.getParameter("userid");
 
-         if (complaintType == null || complaintType.trim().isEmpty() ||
+         if (complaintTypeStr == null || complaintTypeStr.trim().isEmpty() ||
             description == null || description.trim().isEmpty() ||
             date == null || date.trim().isEmpty() ||
             location == null || location.trim().isEmpty()) {
@@ -71,6 +77,7 @@ public class residentController extends HttpServlet {
          
           try {
             int userid = Integer.parseInt(useridStr);
+             int complaintType = Integer.parseInt(complaintTypeStr);
             java.sql.Date sqlDate = java.sql.Date.valueOf(date);
             Part filePart = request.getPart("attachment");
             if (filePart == null) {
@@ -80,25 +87,37 @@ public class residentController extends HttpServlet {
             }
             String fileName = filePart.getSubmittedFileName();
             InputStream fileContent = filePart.getInputStream();
-
+            
+            int statusid = 1;
+            //int complainttypeid = 60001;
+            
+            
+            System.out.println(statusid);
+            //System.out.println(complainttypeid);
+            System.out.println(complaintType);
+            System.out.println(description);
+            System.out.println(date);
+            System.out.println(location);
+            System.out.println(userid);
              try (Connection conn = getConnection()) {
-                String query = "INSERT INTO Complaint (USERID, COMPLAINT_TYPE_NAME, COMPLAINT_TYPE_DESC, COMPLAINT_DATE, COMPLAINT_LOCATION, COMPLAINT_ATTACHMENT) VALUES (?, ?, ?, ?, ?, ?)";
+                String query = "INSERT INTO Complaint (USERID, STATUSID, COMPLAINT_TYPE_ID, COMPLAINT_DESCRIPTION, COMPLAINT_DATE, COMPLAINT_LOCATION, COMPLAINT_ATTACHMENT) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 PreparedStatement stmt = conn.prepareStatement(query);
                 stmt.setInt(1, userid);
-                stmt.setString(2, complaintType);
-                stmt.setString(3, description);
-                stmt.setDate (4, sqlDate);
-                stmt.setString(5, location);
-                stmt.setBlob(6, fileContent);
+                stmt.setInt(2, statusid);
+                stmt.setInt(3, complaintType);
+                stmt.setString(4, description);
+                stmt.setDate (5, sqlDate);
+                stmt.setString(6, location);
+                stmt.setString(7, fileName);
                 stmt.executeUpdate();
             }
                 
             request.setAttribute("message", "Data successfully submitted");
-            request.getRequestDispatcher("complaints.jsp").forward(request, response);
+           // request.getRequestDispatcher("tablecomplaint.jsp").forward(request, response);
         } catch (NumberFormatException e) {
             e.printStackTrace();
             request.setAttribute("message", "Invalid user ID format");
-            request.getRequestDispatcher("error.jsp").forward(request, response);
+            //request.getRequestDispatcher("error.jsp").forward(request, response);
         } catch (Exception e) { // Catch any Exception that may occur
             if (e instanceof ClassNotFoundException) {
                 // Handle ClassNotFoundException specifically
@@ -113,7 +132,7 @@ public class residentController extends HttpServlet {
 
             e.printStackTrace(); // Print the stack trace for debugging
             request.setAttribute("message", "An error occurred while processing your request");
-            request.getRequestDispatcher("error.jsp").forward(request, response);
+            //request.getRequestDispatcher("error.jsp").forward(request, response);
         }
      }
         
@@ -160,8 +179,5 @@ public class residentController extends HttpServlet {
         return "Short description";
     }// </editor-fold>
 
-    private Connection getConnection() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 
 }
